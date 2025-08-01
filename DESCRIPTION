@@ -1,7 +1,7 @@
 Package: mantis
 Type: Package
 Title: Multiple Time Series Scanner
-Version: 0.4.2
+Version: 0.4.3
 Authors@R: c(
     person(c("T.", "Phuong"), "Quan", email = "phuong.quan@ndm.ox.ac.uk",
         role = c("aut", "cre"), comment = c(ORCID = "0000-0001-8566-1817")),
@@ -23,11 +23,11 @@ Config/testthat/edition: 3
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2025-07-25 08:59:46 UTC; phuongq
+Packaged: 2025-07-31 14:10:36 UTC; phuongq
 Author: T. Phuong Quan [aut, cre] (ORCID:
     <https://orcid.org/0000-0001-8566-1817>),
   University of Oxford [cph],
   National Institute for Health Research (NIHR) [fnd]
 Maintainer: T. Phuong Quan <phuong.quan@ndm.ox.ac.uk>
 Repository: CRAN
-Date/Publication: 2025-07-28 18:40:07 UTC
+Date/Publication: 2025-08-01 12:30:02 UTC
