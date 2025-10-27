@@ -1,3 +1,18 @@
+# mantis 1.0.0 (2025-10-27)
+
+Incorporates changes requested for acceptance into https://ropensci.org/.
+
+## Breaking changes
+
+* `expression` parameter of `alert_custom()` replaces `function_call`
+
+## Bug fixes and minor improvements
+
+* `item_order` parameter of `outputspec()` can now handle an arbitrary number of items
+* `timepoint_limits` parameter for alerts and bespoke reports now automatically adjusts user-supplied values to align with the data and `timepoint_unit` where necessary, instead of inserting inappropriate additional timepoints in plots
+* Date-only timepoints cast as POSIXt using a daylight-savings-varying timezone no longer result in inappropriate additional timepoints appearing in plots (#30)
+* Stricter validation of POSIXt timepoints
+
 # mantis 0.4.3 (2025-07-31)
 
 Include bespoke reports functionality.
@@ -13,7 +28,7 @@ Lightweight initial CRAN submission. Only includes standard (non-bespoke) report
 
 ## Bug fixes and minor improvements
 
-* Timestamps added to filenames are now formatted correctly on linux (#25)
+* Timestamps added to filenames are now formatted correctly on linux
 * Intermediate files that are generated while creating a report are now created in `tempdir()` instead of the working directory where possible (#24)
 
 # mantis 0.3.0 (2025-06-10)

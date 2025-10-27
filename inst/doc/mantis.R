@@ -66,35 +66,35 @@ inspec_tabbed3 <- inputspec(
 )
 
 ## ----interactive-display, eval=FALSE------------------------------------------
-#  mantis_report(
-#    df = example_prescription_numbers,
-#    file = "example_prescription_numbers_interactive.html",
-#    inputspec = inspec_tabbed2,
-#    outputspec = outputspec_interactive(),
-#    report_title = "mantis report",
-#    dataset_description = "Antibiotic prescriptions by site",
-#    show_progress = TRUE
-#  )
+# mantis_report(
+#   df = example_prescription_numbers,
+#   file = "example_prescription_numbers_interactive.html",
+#   inputspec = inspec_tabbed2,
+#   outputspec = outputspec_interactive(),
+#   report_title = "mantis report",
+#   dataset_description = "Antibiotic prescriptions by site",
+#   show_progress = TRUE
+# )
 
 ## ----heatmap-display, eval=FALSE----------------------------------------------
-#  mantis_report(
-#    df = example_prescription_numbers,
-#    file = "example_prescription_numbers_heatmap.html",
-#    inputspec = inspec_tabbed,
-#    outputspec = outputspec_static_heatmap(),
-#    report_title = "mantis report",
-#    dataset_description = "Antibiotic prescriptions by site",
-#    show_progress = TRUE
-#  )
+# mantis_report(
+#   df = example_prescription_numbers,
+#   file = "example_prescription_numbers_heatmap.html",
+#   inputspec = inspec_tabbed,
+#   outputspec = outputspec_static_heatmap(),
+#   report_title = "mantis report",
+#   dataset_description = "Antibiotic prescriptions by site",
+#   show_progress = TRUE
+# )
 
 ## ----multipanel-display, eval=FALSE-------------------------------------------
-#  mantis_report(
-#    df = example_prescription_numbers,
-#    file = "example_prescription_numbers_multipanel.html",
-#    inputspec = inspec_tabbed,
-#    outputspec = outputspec_static_multipanel(),
-#    report_title = "mantis report",
-#    dataset_description = "Antibiotic prescriptions by site",
-#    show_progress = TRUE
-#  )
+# mantis_report(
+#   df = example_prescription_numbers,
+#   file = "example_prescription_numbers_multipanel.html",
+#   inputspec = inspec_tabbed,
+#   outputspec = outputspec_static_multipanel(),
+#   report_title = "mantis report",
+#   dataset_description = "Antibiotic prescriptions by site",
+#   show_progress = TRUE
+# )
 

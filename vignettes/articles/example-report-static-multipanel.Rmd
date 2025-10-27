@@ -24,7 +24,7 @@ if (
   filename <-
     mantis::mantis_report(
       df = example_prescription_numbers,
-      file = "../../docs/articles/example-prescriptions-static-multipanel",
+      file = "../../docs/articles/example-prescriptions-static-multipanel.html",
       inputspec = mantis::inputspec(
         timepoint_col = "PrescriptionDate",
         item_cols = c("Antibiotic", "Location"),

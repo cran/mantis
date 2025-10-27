@@ -516,11 +516,12 @@ prepare_df <- function(
 
 
 # -----------------------------------------------------------------------------
-#' Convert prepared df into required format for generating tables/plots
+#' Convert prepared df into required format for generating interactive tables/plots
 #'
 #' @param prepared_df data frame returned from prepare_df()
 #' @param inputspec Specification of data in df
 #' @param plot_value_type "value" or "delta"
+#' @param summary_cols vector of which summary columns to include
 #' @param alert_results `alert_results` object returned from `run_alerts()`
 #' @param sort_by column in output table to sort by. Can be one of
 #'   `alert_overall`, or one of the summary columns. Append a minus sign to sort
@@ -533,13 +534,12 @@ prepare_table <- function(
   prepared_df,
   inputspec,
   plot_value_type = "value",
+  summary_cols = c("max_value"),
   alert_results = NULL,
   sort_by = NULL
 ) {
-  # TODO: Consider passing in just item_cols rather than entire inputspec?
-
   # initialise column names to avoid R CMD check Notes
-  timepoint <- value <- value_for_history <- NULL
+  timepoint <- value <- value_for_history <- history <- NULL
   alert_description <- alert_result <- item_order_final <- NULL
 
   table_df <-
@@ -561,12 +561,13 @@ prepare_table <- function(
     dplyr::summarise(
       item_order_final = min(item_order_final),
       # summary columns
-      # TODO: only generate these if requested
+      # NOTE: ideally would only generate these if requested, but can't find a
+      # way to do this that doesn't require more computational effort than
+      # simply generating them all then deleting the unneeded ones (lower down)
       last_timepoint = max_else_na(timepoint[!is.na(value)]),
       last_value = rev(value)[1],
       last_value_nonmissing = rev(value[!is.na(value)])[1],
       max_value = max_else_na(value),
-      # TODO: match precision to values
       mean_value = round(mean(value, na.rm = TRUE), digits = 1),
       # history column
       history = history_to_list(
@@ -575,7 +576,13 @@ prepare_table <- function(
         plot_value_type
       ),
       .groups = "drop"
-    )
+    ) |>
+    # only keep the summary_cols requested
+    dplyr::select(c(
+      item_cols_prefix(inputspec$item_cols),
+      item_order_final,
+      dplyr::any_of(summary_cols),
+      history))
 
   # add alerts column
   if (!is.null(alert_results)) {
@@ -691,28 +698,27 @@ align_data_timepoints <- function(
   # initialise column names to avoid R CMD check Notes
   timepoint <- value <- NULL
 
-  # TODO: Need to work out correct limits to use based on df
-  #  in case supplied limits don't match df granularity
-  if (is.na(timepoint_limits[1])) {
-    min_timepoint <- min(prepared_df$timepoint)
-  } else {
-    min_timepoint <- timepoint_limits[1]
+  # convert all dates to UTC to expose any daylight savings complications
+  prepared_df$timepoint <- lubridate::with_tz(prepared_df$timepoint, tzone = "UTC")
+
+  min_timepoint <- min(prepared_df$timepoint)
+  max_timepoint <- max(prepared_df$timepoint)
+  # if the supplied limit(s) don't match the df granularity, be kind and adjust it
+  if (!is.na(timepoint_limits[1])) {
+    min_timepoint <- adjust_timepoint_limit(
+      timepoint_limit = timepoint_limits[1],
+      timepoint_values = prepared_df$timepoint,
+      timepoint_unit = inputspec$timepoint_unit,
+      limit_type = "min")
   }
-  if (is.na(timepoint_limits[2])) {
-    max_timepoint <- max(prepared_df$timepoint)
-  } else {
-    # NOTE: While timepoint_limits should already be a date class,
-    # if user supplies an NA first in the vector, the second value gets coerced
-    # to numeric and leads to an error in seq() later on
-    if (inputspec$timepoint_unit %in% c("sec", "min", "hour")) {
-      max_timepoint <- as.POSIXct(timepoint_limits[2])
-    } else {
-      max_timepoint <- as.Date(timepoint_limits[2])
-    }
+  if (!is.na(timepoint_limits[2])) {
+    max_timepoint <- adjust_timepoint_limit(
+      timepoint_limit = timepoint_limits[2],
+      timepoint_values = prepared_df$timepoint,
+      timepoint_unit = inputspec$timepoint_unit,
+      limit_type = "max")
   }
 
-  # TODO: Need to work out correct granularity to use based on df
-  #  as don't want to insert unnecessary rows
   all_timepoints <- seq(
     min_timepoint,
     max_timepoint,
@@ -753,6 +759,83 @@ align_data_timepoints <- function(
   df_out
 }
 
+# -----------------------------------------------------------------------------
+#' Adjust the supplied timepoint_limit to align with data if necessary
+#'
+#' @param timepoint_limit datetime value supplied by user
+#' @param timepoint_values datetime values in the data
+#' @param timepoint_unit granularity specified by user
+#' @param limit_type "min" or "max"
+#'
+#' @returns Datetime
+#' @noRd
+adjust_timepoint_limit <- function(
+  timepoint_limit,
+  timepoint_values,
+  timepoint_unit,
+  limit_type
+) {
+
+  # if everything is in days then no changes needed
+  if (
+    timepoint_unit == "day" &&
+      inherits(timepoint_limit, what = "Date") && inherits(timepoint_values, what = "Date")
+  ) {
+    return(timepoint_limit)
+  }
+
+  # ensure limit is of same class as values
+  if (inherits(timepoint_values, what = "POSIXct")) {
+    timepoint_limit <- as.POSIXct(timepoint_limit, tz = attr(timepoint_values, "tz"))
+  } else if (inherits(timepoint_values, what = "POSIXlt")) {
+    timepoint_limit <- as.POSIXlt(timepoint_limit, tz = attr(timepoint_values, "tz"))
+  } else if (inherits(timepoint_values, what = "Date")) {
+    timepoint_limit <- as.Date(timepoint_limit)
+  }
+
+  # Estimate number of units needed
+  if (timepoint_unit %in% c("month", "quarter", "year")) {
+    unit <- "day"
+    unit_length <- switch(
+      timepoint_unit,
+      month = 30,
+      quarter = 90,
+      year = 365
+    )
+  } else {
+    unit <- timepoint_unit
+    unit_length <- 1
+  }
+
+  # NOTE: it doesn't really matter which end of the timepoint_values we start from
+  base_date <- min(timepoint_values)
+  units_diff <- as.numeric(difftime(
+    timepoint_limit,
+    base_date,
+    units = unit
+  ))
+  # pad the sequence length to ensure we always have enough
+  estimated_units_needed <- abs(ceiling(units_diff / unit_length)) + 2
+
+  # Generate candidate dates
+  candidate_dates <- seq(
+    from = base_date,
+    by = paste0(ifelse(timepoint_limit < base_date, "-", ""), "1 ", timepoint_unit),
+    length.out = estimated_units_needed
+  )
+
+  # Choose the closest one in the correct direction
+  if (limit_type == "min") {
+    # want the earliest date that is no earlier than the target
+    new_timepoint_limit <- min(candidate_dates[timepoint_limit <= candidate_dates])
+  } else if (limit_type == "max") {
+    # want the greatest date that is no greater than the target
+    new_timepoint_limit <- max(candidate_dates[timepoint_limit >= candidate_dates])
+  }
+
+  new_timepoint_limit
+}
+
 
 # -----------------------------------------------------------------------------
 #' Wrapper for max function
@@ -770,6 +853,10 @@ max_else_na <- function(
   if (all(is.na(x))) {
     if ("Date" %in% class(x)) {
       as.Date(NA)
+    } else if ("POSIXct" %in% class(x)) {
+      as.POSIXct(NA)
+    } else if ("POSIXlt" %in% class(x)) {
+      as.POSIXlt(NA)
     } else {
       NA_real_
     }
@@ -854,10 +941,9 @@ validate_df_to_inputspec_col_names <- function(
 
   # only keep the cols params
   # and drop any items that are NULL using the unlist()
-  # TODO: find the appropriate regex
-  colspec_vector <- unlist(inputspec[
-    endsWith(names(inputspec), "_col") | endsWith(names(inputspec), "_cols")
-  ])
+  colspec_vector <- unlist(
+    inputspec[grep("(.+)(_col|_cols)$", names(inputspec))]
+    )
 
   # ignore any columns in df that are not in specification
   dfnames <- names(df)[names(df) %in% colspec_vector]
@@ -992,7 +1078,6 @@ validate_df_to_inputspec_col_types <- function(
 
   # item col will be coerced to character type
   # Check it doesn't contain both NA values and string "NA" values
-  # TODO: Confirm this is valid for multi-item_cols
   for (col in inputspec$item_cols) {
     item_vals <- df |> dplyr::pull(dplyr::all_of(col))
     if (any(is.na(item_vals)) && any(item_vals == "NA", na.rm = TRUE)) {
@@ -1334,7 +1419,8 @@ unique_timepoint_subunits <- function(
 ) {
   df |>
     dplyr::pull(dplyr::all_of(timepoint_col)) |>
-    strftime(format = strftime_format) |>
+    lubridate::with_tz("UTC") |>
+    strftime(format = strftime_format, tz = "UTC") |>
     unique()
 }
 
@@ -1395,45 +1481,26 @@ arrange_items <- function(
   }
 
   # keep only the items which match a column in the df
-  items <- item_order[which(names(item_order) %in% names(df))]
+  items <- item_order[names(item_order) %in% names(df)]
 
   # explicitly note the levels for each item
-  levels <- items
-  for (i in seq_along(items)) {
-    ascending <- sort(unique(df[names(items[i])][[1]]))
-    if (all(is.character(items[i][[1]]))) {
-      levels[i][[1]] <- unique(c(items[i][[1]], ascending))
+  item_levels <- lapply(names(items), function(col) {
+    explicit_vals <- items[[col]]
+    ascending_vals <- sort(unique(df[[col]]))
+    if (is.character(explicit_vals)) {
+      unique(c(explicit_vals, ascending_vals))
     } else {
-      levels[i][[1]] <- ascending
+      ascending_vals
     }
-  }
+  })
+  names(item_levels) <- names(items)
 
   # Sort using factors for all items, otherwise values not mentioned explicitly
   # can get unsorted by subsequent items
-  # This is super ugly but temporarily just limit it to 3 items until find
-  # better way
-  if (length(items) == 1) {
-    df_sorted <-
-      df |>
-      dplyr::arrange(factor(.data[[names(items[1])]], levels = levels[1][[1]]))
-  } else if (length(items) == 2) {
-    df_sorted <-
-      df |>
-      dplyr::arrange(
-        factor(.data[[names(items[1])]], levels = levels[1][[1]]),
-        factor(.data[[names(items[2])]], levels = levels[2][[1]])
-      )
-  } else if (length(items) == 3) {
-    df_sorted <-
-      df |>
-      dplyr::arrange(
-        factor(.data[[names(items[1])]], levels = levels[1][[1]]),
-        factor(.data[[names(items[2])]], levels = levels[2][[1]]),
-        factor(.data[[names(items[3])]], levels = levels[3][[1]])
-      )
-  }
-
-  df_sorted
+  order_args <- lapply(names(item_levels), function(col)
+    factor(df[[col]], levels = item_levels[[col]])
+  )
+  df[do.call(order, order_args), , drop = FALSE]
 }
 
 

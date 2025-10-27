@@ -29,7 +29,7 @@
 #'
 #' @export
 bespoke_rmd_initialise_widgets <- function(
-    plot_type
+  plot_type
 ) {
   validate_params_required(match.call())
   validate_params_type(
@@ -126,14 +126,14 @@ bespoke_rmd_initialise_widgets <- function(
 #' @seealso [bespoke_rmd_initialise_widgets()]
 #' @export
 bespoke_rmd_output <- function(
-    df,
-    inputspec,
-    outputspec,
-    alertspec = NULL,
-    timepoint_limits = c(NA, NA),
-    fill_with_zero = FALSE,
-    tab_name = NULL,
-    tab_level = 1
+  df,
+  inputspec,
+  outputspec,
+  alertspec = NULL,
+  timepoint_limits = c(NA, NA),
+  fill_with_zero = FALSE,
+  tab_name = NULL,
+  tab_level = 1
 ) {
   validate_params_required(match.call())
   validate_params_type(
@@ -218,14 +218,14 @@ bespoke_rmd_output <- function(
 #'
 #' @export
 bespoke_rmd_alert_results <- function(
-    df,
-    inputspec,
-    alert_rules,
-    filter_results = c("PASS", "FAIL", "NA"),
-    timepoint_limits = c(NA, NA),
-    fill_with_zero = FALSE,
-    tab_name = NULL,
-    tab_level = 1
+  df,
+  inputspec,
+  alert_rules,
+  filter_results = c("PASS", "FAIL", "NA"),
+  timepoint_limits = c(NA, NA),
+  fill_with_zero = FALSE,
+  tab_name = NULL,
+  tab_level = 1
 ) {
   validate_params_required(match.call())
   validate_params_type(
@@ -240,24 +240,14 @@ bespoke_rmd_alert_results <- function(
     tab_level = tab_level
   )
 
-  # TODO: bit of repetition here cf mantis_alerts()
-  validate_df_to_inputspec(df, inputspec)
-  validate_alert_rules_to_inputspec(alert_rules, inputspec)
-
-  prepared_df <-
-    prepare_df(
-      df,
-      inputspec = inputspec,
-      timepoint_limits = timepoint_limits,
-      fill_with_zero = fill_with_zero
-    )
-
   alert_results <-
-    run_alerts(
-      prepared_df = prepared_df,
+    prepare_and_run_alerts(
+      df = df,
       inputspec = inputspec,
       alert_rules = alert_rules,
-      filter_results = filter_results
+      filter_results = filter_results,
+      timepoint_limits = timepoint_limits,
+      fill_with_zero = fill_with_zero
     )
 
   # create parent tab if specified
@@ -314,7 +304,7 @@ initialise_widgets <- function(
       output_table_interactive(
         inputspec = inputspec,
         plot_type = plot_type,
-        summary_cols = "",
+        summary_cols = NULL,
         height = 0,
         bordered = FALSE
       )
