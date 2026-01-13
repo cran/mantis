@@ -1,7 +1,7 @@
 Package: mantis
 Type: Package
 Title: Multiple Time Series Scanner
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: c(
     person(c("T.", "Phuong"), "Quan", email = "phuongquan567@outlook.com",
         role = c("aut", "cre"), comment = c(ORCID = "0000-0001-8566-1817")),
@@ -11,9 +11,9 @@ Authors@R: c(
     person("Margaret", "Siple", role = "rev")
     )
 Description: Generate interactive html reports that enable quick visual review of multiple related time series stored in a data frame. For static datasets, this can help to identify any temporal artefacts that may affect the validity of subsequent analyses. For live data feeds, regularly scheduled reports can help to pro-actively identify data feed problems or unexpected trends that may require action. The reports are self-contained and shareable without a web server. 
-URL: https://github.com/phuongquan/mantis,
-        https://phuongquan.github.io/mantis/
-BugReports: https://github.com/phuongquan/mantis/issues
+URL: https://github.com/ropensci/mantis,
+        https://ropensci.github.io/mantis/
+BugReports: https://github.com/ropensci/mantis/issues
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
@@ -26,7 +26,7 @@ Config/testthat/edition: 3
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2025-10-27 13:17:44 UTC; phuon
+Packaged: 2026-01-13 15:49:28 UTC; phuon
 Author: T. Phuong Quan [aut, cre] (ORCID:
     <https://orcid.org/0000-0001-8566-1817>),
   University of Oxford [cph],
@@ -35,4 +35,4 @@ Author: T. Phuong Quan [aut, cre] (ORCID:
   Margaret Siple [rev]
 Maintainer: T. Phuong Quan <phuongquan567@outlook.com>
 Repository: CRAN
-Date/Publication: 2025-10-27 14:50:02 UTC
+Date/Publication: 2026-01-13 16:50:02 UTC
